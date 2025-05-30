@@ -137,100 +137,100 @@ class guessingGame{
     delete[] winners;
     return fileMsg;
   }
-  void startRound(int playerIndex,int roundIndex){
-    int secretNum=random(1,101);
-    lcd.setCursor(0, 0);
-    lcd.print(secretNum);
-    delay(1000);
-    roundDuration=20;
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("P:"+ String(playerIndex+1)+" A:1"+" R:"+String(roundIndex+1));
-    lcd.setCursor(12,0);
-    lcd.print("T:20");
-    roundStartTime=millis();
-    int guess=getInput(true);
-    int tryNum=1;
-    String msg="";
-
-    while(!this->checkGuess(secretNum,guess,playerIndex,msg) && roundDuration>0 ){
-      noTone(BUZZER_PIN);
-      tryNum++;
-      if(tryNum>this->tryAmount){
-        break;
-      }
-      lcd.setCursor(0,0);
-      lcd.print("                ");
-      lcd.setCursor(0,0);
-      lcd.print("P:"+String(playerIndex+1)+" A:"+ String(tryNum) +" R:"+String(roundIndex+1));
-      displayTime();
-      guess=getInput(true);
-      displayTime();
-    }
-    if(tryNum>this->tryAmount){
-      msg="No attempt left.";    
-      lcd.setCursor(0,0);
-      lcd.print("                ");
-      lcd.setCursor(0,0);
-      lcd.print(msg);
-    }
-    if(roundDuration<=0){
-      msg="Time ended.";  
-      lcd.setCursor(0,0);
-      lcd.print("                ");
-      lcd.setCursor(0,0);
-      lcd.print(msg);
-    }
-    delay(500);
-    lcd.setCursor(0,1);
-    lcd.print("                ");
-    lcd.setCursor(0,1);
-    lcd.print("Secret num:" + String(secretNum));
-    delay(1500);
+  void displayTime(unsigned long lastUpdateTime, int& roundDuration) {
+  if (millis() - lastUpdateTime >= 1000) {
+    roundDuration--;
+    lcd.setCursor(12, 0);
+    lcd.print("     ");
+    lcd.setCursor(12, 0);
+    lcd.print("T:" + String(roundDuration));
   }
-    private:
-    void displayTime(){
-      if((millis()-roundStartTime)>=1000){
+}
+
+  void startRound(int playerIndex, int roundIndex) {
+    int secretNum = random(1, 101);
+    Serial.print(secretNum);
+    int roundDuration = 20;
+    unsigned long lastUpdateTime = millis();
+    unsigned long roundStartTime = millis();
+    int tryNum = 1;
+    int guess = -1;
+    bool guessed = false;
+    String msg = "";
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("P:" + String(playerIndex + 1) + " A:1 R:" + String(roundIndex + 1));
+    lcd.setCursor(12, 0);
+    lcd.print("T:" + String(roundDuration));
+
+    while (roundDuration > 0 && tryNum <= tryAmount && !guessed) {
+      // Timer display update
+      if (millis() - lastUpdateTime >= 1000) {
         roundDuration--;
-        roundStartTime=millis();}
-        lcd.setCursor(12,0);
-        lcd.print("    ");
-        lcd.setCursor(12,0);
-        lcd.print("T:"+String(roundDuration));
+        lastUpdateTime = millis();
+        lcd.setCursor(12, 0);
+        lcd.print("     ");
+        lcd.setCursor(12, 0);
+        lcd.print("T:" + String(roundDuration));
+      }
+
+      char key = keypad.getKey();
+      if (key) {
+        guess = getInput(true);
+        if (checkGuess(secretNum, guess, playerIndex, msg)) {
+          guessed = true;
+          break;
+        } else {
+          tryNum++;
+          if (tryNum <= tryAmount) {
+            lcd.setCursor(0, 0);
+            lcd.print("                ");
+            lcd.setCursor(0, 0);
+            lcd.print("P:" + String(playerIndex + 1) + " A:" + String(tryNum) + " R:" + String(roundIndex + 1));
+          }
+        }
+      }
     }
-    bool checkGuess(int secretNum,int guess,int playerIndex,String msg){
-      displayTime();
-      bool guessCheck=true;
-      if(guess==secretNum){
-        this->playerScores[playerIndex]=this->playerScores[playerIndex]+20;
-        Serial.println(this->playerScores[playerIndex]);
-        msg="Correct!";
-        tone(BUZZER_PIN, 1000, 300);
-        delay(300);  
-      }
-      else if (guess-secretNum<=5 && guess-secretNum>=-5 ){
-        this->playerScores[playerIndex]=this->playerScores[playerIndex]+10;
-        Serial.println(this->playerScores[playerIndex]);
-        msg="Close!";
-        tone(BUZZER_PIN, 700, 200);
-        delay(300);  
-      }
-      else{
-        msg=guess>secretNum?"Wrong. Lower":"Wrong. Higher";
-        tone(BUZZER_PIN, 400, 150);
-        delay(300);
-        displayTime();
-        guessCheck=false;
-      }
-      lcd.setCursor(0,1);
-      lcd.print("               ");
-      lcd.setCursor(0,1);
+
+    lcd.clear();
+    if (guessed) {
+      lcd.setCursor(0, 0);
       lcd.print(msg);
-      delay(1500);
-      lcd.setCursor(0,1);
-      lcd.print("               ");
-      return guessCheck;
+    } else if (roundDuration <= 0) {
+      lcd.setCursor(0, 0);
+      lcd.print("Time ended.");
+    } else {
+      lcd.setCursor(0, 0);
+      lcd.print("No attempts.");
     }
+
+    lcd.setCursor(0, 1);
+    lcd.print("Secret num:" + String(secretNum));
+    delay(2000);
+  }
+  bool checkGuess(int secretNum, int guess, int playerIndex, String& msg) {
+    if (guess == secretNum) {
+      playerScores[playerIndex] += 20;
+      msg = "Correct!";
+      tone(BUZZER_PIN, 1000, 200);
+      return true;
+    } else if (abs(secretNum - guess) <= 5) {
+      playerScores[playerIndex] += 10;
+      msg = "Close!";
+      tone(BUZZER_PIN, 700, 200);
+      return true;
+    } else {
+      msg = guess > secretNum ? "Lower" : "Higher";
+      tone(BUZZER_PIN, 400, 150);
+    }
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
+    lcd.setCursor(0, 1);
+    lcd.print(msg);
+    return false;
+  }
+
 };
 guessingGame* Game;
 
