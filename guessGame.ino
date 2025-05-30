@@ -28,65 +28,91 @@ int tryNum;
 int curRound;
 int curPlayer;
 int getInput(){
-  char key=keypad.getKey();
-  String input="";
-  int num=0;
-  bool runAgain=false;
-  while(num<=0){
-      while(key!='#'){
-        if(key && key!='*'){
-          input+=key;
-         lcd.setCursor(0,1);
-         lcd.print("               ");
-         lcd.setCursor(0,1);
-         lcd.print(input);
+  char key;
+  String input = "";
+  int num = 0;
+  bool runAgain = false;
+
+  while (num <= 0) {
+    while (true) {
+      key = keypad.getKey();
+      if (key) {
+        if (key == '#') break;
+        else if (key == '*') {
+          if (input.length() > 0) input.remove(input.length() - 1);
+        } else {
+          input += key;
         }
-        delay(100);
-        key=keypad.getKey();
-        }
-      num=input.toInt();
-      if(num<=0){
-        lcd.print("Number>0");
-        input="";
-        delay(1000);
-        runAgain=true;
-        break;
+
+        lcd.setCursor(0, 1);
+        lcd.print("                ");  // Clear line
+        lcd.setCursor(0, 1);
+        lcd.print(input);
       }
- }
- if(runAgain){
-  num=getInput(true);
- }
+      delay(100);
+    }
+
+    num = input.toInt();
+    if (num <= 0) {
+      lcd.setCursor(0, 1);
+      lcd.print("Number>0");
+      delay(1000);
+      input = "";
+      runAgain = true;
+      break;
+    }
+  }
+
+  if (runAgain) {
+    num = getInput();
+  }
+
   return num;
 }
+
 int getInput(bool guess){
-  char key=keypad.getKey();
-  String input="";
-  int num=0;
-  bool runAgain=false;
-  while(num<=0){
-      while(key!='#'){
-        if(key && key!='*'){
-          input+=key;
-        lcd.setCursor(0,1); lcd.print(input); // optional live display
+  char key;
+  String input = "";
+  int num = 0;
+  bool runAgain = false;
+
+  while (num <= 0) {
+    while (true) {
+      key = keypad.getKey();
+      if (key) {
+        if (key == '#') break;
+        else if (key == '*') {
+          if (input.length() > 0) input.remove(input.length() - 1);
+        } else {
+          input += key;
         }
-       delay(100);
-        key=keypad.getKey();
-        }
-      num=input.toInt();
-      if(num<1 || num>100){
-        lcd.clear();
-        lcd.print("Range 1-100");
-        input="";
-        delay(1000);
-        runAgain=true;
-        break;
+
+        lcd.setCursor(0, 1);
+        lcd.print("                ");  // Clear line
+        lcd.setCursor(0, 1);
+        lcd.print(input);
       }
- }
- if(runAgain){
-  num=getInput(true);
- }
+      delay(100);
+    }
+
+    num = input.toInt();
+    if (num < 1 || num > 100) {
+      lcd.clear();
+      lcd.print("Range 1-100");
+      delay(1000);
+      input = "";
+      runAgain = true;
+      break;
+    }
+  }
+
+  if (runAgain) {
+    num = getInput(true);
+  }
+
   return num;
 }
+
 class guessingGame{
   private:
   int* playerScores=nullptr;
@@ -149,7 +175,6 @@ class guessingGame{
 
   void startRound(int playerIndex, int roundIndex) {
     int secretNum = random(1, 101);
-    Serial.print(secretNum);
     int roundDuration = 20;
     unsigned long lastUpdateTime = millis();
     unsigned long roundStartTime = millis();
